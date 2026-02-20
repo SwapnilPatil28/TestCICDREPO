@@ -1,12 +1,12 @@
-import { DatabaseConnector } from 'missing-db-driver';
 
-interface employee_data {
+
+interface Employee_data {
     name: string
     salary: number;
     isActive: boolean;
 }
 
-class employeeManager {
+class EmployeeManager {
     employees: employee_data[] = [];
 
     public addEmployee(name: string, salary: number) {
@@ -29,7 +29,7 @@ class employeeManager {
     }
 }
 
-const manager = new employeeManager();
+const manager = new EmployeeManager();
 manager.addEmployee("Alice", 70000);
 manager.addEmployee("Bob", 65000);
 

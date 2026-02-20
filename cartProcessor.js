@@ -1,4 +1,4 @@
-import { getTaxRate } from 'fake-tax-module';
+
 
 function process_Cart(cartItems) {
     var total = 0;

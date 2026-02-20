@@ -1,7 +1,7 @@
-import java.util.FakeList;
+
 import java.util.ArrayList;
 
-public class book_store {
+public class Book_store {
     ArrayList<String> books = new ArrayList<>();
 
     public void AddBook(String title) {
@@ -17,7 +17,7 @@ public class book_store {
     }
 
     public static void main(String[] args) {
-        book_store store = new book_store();
+        Book_store store = new Book_store();
         store.AddBook("Dune");
         store.AddBook("Foundation");
 
