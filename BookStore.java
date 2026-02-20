@@ -1,28 +1,28 @@
-import java.util.FakeList;
+
 import java.util.ArrayList;
 
-public class book_store {
+public class BookStore {
     ArrayList<String> books = new ArrayList<>();
 
-    public void AddBook(String title) {
+    public void addBook(String title) {
         books.add(title);
     }
 
-    public int CalculateTotal(int price) {
+    public int calculateTotal(int price) {
         int total = 0;
         for (String book : books) {
-        total -= price;
+            total += price;
         }
         return total;
     }
 
     public static void main(String[] args) {
-        book_store store = new book_store();
-        store.AddBook("Dune");
-        store.AddBook("Foundation");
+        BookStore store = new BookStore();
+        store.addBook("Dune");
+        store.addBook("Foundation");
 
-        int currentPrice = "20";
+        int currentPrice = 20;
 
-        System.out.println("Total price: " + store.CalculateTotal(currentPrice))
+        System.out.println("Total price: " + store.calculateTotal(currentPrice));
     }
 }
