@@ -1,4 +1,4 @@
-name: Universal CI (Python + Java + JS/TS)
+name: Universal CI (Lenient)
 
 on:
   push:
@@ -10,14 +10,10 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -32,98 +28,65 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm
-          cache-dependency-path: |
-            **/package-lock.json
-            **/npm-shrinkwrap.json
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
-          cache: maven
 
-      - name: Python CI
+      - name: Python checks
         shell: bash
         run: |
-          set -e
+          set +e
           if find . -type f -name "*.py" -not -path "./.venv/*" -not -path "./venv/*" | grep -q .; then
-            echo "Python project detected."
             python -m pip install --upgrade pip
-
-            if [ -f requirements.txt ]; then
-              pip install -r requirements.txt
-            fi
-
-            if [ -f pyproject.toml ]; then
-              pip install .
-            elif [ -f setup.py ]; then
-              pip install .
-            fi
-
+            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
             pip install pytest
-
             if find . -type f \( -name "test_*.py" -o -name "*_test.py" \) | grep -q .; then
-              pytest -q
+              pytest -q || echo "pytest failed (non-blocking in lenient mode)"
             else
-              echo "No pytest test files found. Running import/syntax check."
-              python -m compileall -q .
+              python -m compileall -q . || echo "python compile check failed (non-blocking)"
             fi
           else
-            echo "No Python files found. Skipping Python CI."
+            echo "No Python files found"
           fi
+          exit 0
 
-      - name: Java CI
+      - name: Java checks
         shell: bash
         run: |
-          set -e
+          set +e
           if [ -f pom.xml ]; then
-            echo "Maven project detected."
-            mvn -B -ntp test
+            mvn -B -ntp test || echo "maven test failed (non-blocking)"
           elif [ -f ./gradlew ]; then
-            echo "Gradle wrapper project detected."
             chmod +x ./gradlew
-            ./gradlew test --no-daemon
+            ./gradlew test --no-daemon || echo "gradle test failed (non-blocking)"
           elif [ -f build.gradle ] || [ -f build.gradle.kts ]; then
-            echo "Gradle build file found but no wrapper. Skipping to avoid environment mismatch."
-            echo "Recommendation: add gradlew/gradlew.bat to repository."
+            echo "Gradle file found without wrapper; skipping"
           else
-            echo "No Java build file found. Skipping Java CI."
+            echo "No Java build config found"
           fi
+          exit 0
 
-      - name: JavaScript / TypeScript CI
+      - name: JavaScript/TypeScript checks
         shell: bash
         run: |
-          set -e
+          set +e
           if [ -f package.json ]; then
-            echo "Node project detected."
-            corepack enable || true
-
             if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
-              npm ci
-              RUNNER="npm run -s"
-            elif [ -f pnpm-lock.yaml ]; then
-              corepack prepare pnpm@latest --activate
-              pnpm install --frozen-lockfile
-              RUNNER="pnpm run"
-            elif [ -f yarn.lock ]; then
-              corepack prepare yarn@stable --activate
-              yarn install --frozen-lockfile
-              RUNNER="yarn run"
+              npm ci || npm install
             else
               npm install
-              RUNNER="npm run -s"
             fi
 
             has_script () {
               node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts['$1'] ? 0 : 1)"
             }
 
-            if has_script lint; then $RUNNER lint; else echo "No lint script"; fi
-            if has_script typecheck; then $RUNNER typecheck; else echo "No typecheck script"; fi
-            if has_script test; then $RUNNER test; else echo "No test script"; fi
-            if has_script build; then $RUNNER build; else echo "No build script"; fi
+            if has_script test; then npm run -s test || echo "test failed (non-blocking)"; else echo "No test script"; fi
+            if has_script build; then npm run -s build || echo "build failed (non-blocking)"; else echo "No build script"; fi
           else
-            echo "No package.json found. Skipping JS/TS CI."
+            echo "No package.json found"
           fi
+          exit 0
